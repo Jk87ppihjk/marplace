@@ -8,7 +8,7 @@ const { protectDeliveryPerson } = require('./deliveryAuthMiddleware');
 const { protect } = require('./authMiddleware'); 
 
 // --- Constantes de Regras de Negócio ---
-const MARKETPLACE_FEE_RATE = 0.05; // 5% (Taxa usada no cálculo do split na confirmação)
+const MARKETPLACE_FEE_RATE = 0.00; // MODIFICADO PARA MONO-LOJA (SEM COMISSÃO)
 const DELIVERY_FEE = 5.00;         // R$ 5,00
 
 // ===================================================================
@@ -468,21 +468,21 @@ router.post('/delivery/confirm', protect, async (req, res) => {
         // O dinheiro já entrou via MP na criação, aqui liberamos o 'pending_balance'
         
         if (order.delivery_method === 'Seller' || order.delivery_method === 'Contracted') {
-            // Entrega Própria: Vendedor recebe tudo (menos taxa MP)
-            const marketplaceFee = order.total_amount * MARKETPLACE_FEE_RATE;
-            const sellerEarnings = order.total_amount - marketplaceFee; 
+            // Entrega Própria: Vendedor recebe tudo (SEM taxa MP)
+            const marketplaceFee = 0; // MARKETPLACE_FEE_RATE AGORA É 0.00
+            const sellerEarnings = order.total_amount; // Vendedor recebe 100% do total
             
             await pool.execute(
                 'UPDATE users SET pending_balance = pending_balance + ? WHERE id = ?',
                 [sellerEarnings, order.seller_id]
             );
-            paymentMessage = `Entrega confirmada. R$${sellerEarnings.toFixed(2)} liberados para o vendedor.`;
+            paymentMessage = `Entrega confirmada. R$${sellerEarnings.toFixed(2)} liberados para o vendedor (Valor Total).`;
         }
         else if (order.delivery_method === 'Marketplace' && order.delivery_person_id) {
-            // Entrega Marketplace: Entregador recebe a taxa de entrega
-            const marketplaceFee = order.total_amount * MARKETPLACE_FEE_RATE;
+            // Entrega Marketplace: Entregador recebe a taxa de entrega (R$5,00)
+            const marketplaceFee = 0; // MARKETPLACE_FEE_RATE AGORA É 0.00
             const deliveredPayment = DELIVERY_FEE; 
-            const sellerEarnings = order.total_amount - marketplaceFee - deliveredPayment; 
+            const sellerEarnings = order.total_amount - deliveredPayment; // Vendedor recebe Total - Taxa do Entregador
             
             // 1. Credita Entregador
             await pool.execute(
