@@ -8,7 +8,7 @@ const { protect } = require('./authMiddleware');
 // ! CRÍTICO: Importa o serviço de notificação
 const { sendNotification } = require('./notificacao'); 
 
-const MARKETPLACE_FEE_RATE = 0.08; 
+const MARKETPLACE_FEE_RATE = 0.00; // MODIFICADO PARA MONO-LOJA (SEM COMISSÃO)
 
 
 // ===================================================================
@@ -187,14 +187,14 @@ router.post('/confirm', protect, async (req, res) => {
         let paymentMessage = 'Pagamento em processamento.';
         
         // 3. Processamento Financeiro
-        const marketplaceFee = order.total_amount * MARKETPLACE_FEE_RATE; 
-        const sellerEarnings = order.total_amount - marketplaceFee; 
+        // A taxa é 0.00, então o valor total é creditado ao vendedor
+        const sellerEarnings = order.total_amount; // MODIFICADO: order.total_amount - (order.total_amount * MARKETPLACE_FEE_RATE)
         
         await pool.execute(
             'UPDATE users SET pending_balance = pending_balance + ? WHERE id = ?',
             [sellerEarnings, order.seller_id]
         );
-        paymentMessage = `R$${sellerEarnings.toFixed(2)} creditados ao vendedor (via split MP).`;
+        paymentMessage = `R$${sellerEarnings.toFixed(2)} creditados ao vendedor (Total do Pedido).`; // Mensagem ajustada
         
         // 4. Atualiza status
         await pool.execute('UPDATE orders SET status = "Completed" WHERE id = ?', [order_id]); 
