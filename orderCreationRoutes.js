@@ -10,7 +10,7 @@ const { protect, protectWithAddress } = require('./authMiddleware');
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 
 // --- Constantes Comuns ---
-const MARKETPLACE_FEE_RATE = 0.08; 
+const MARKETPLACE_FEE_RATE = 0.00; // MODIFICADO PARA MONO-LOJA (SEM COMISSÃO)
 const DELIVERY_FEE_FALLBACK = 5.00; 
 
 
@@ -204,7 +204,7 @@ async function createMercadoPagoPreference(productId, payerEmail, totalAmount, o
     }
 
     const marketplaceFeeAmount = parseFloat((totalAmount * MARKETPLACE_FEE_RATE).toFixed(2));
-    console.log(`[MP/PREF] Pedido #${orderId} | Total: ${totalAmount} | Fee: ${marketplaceFeeAmount} | Vendedor: ${sellerId}`);
+    console.log(`[MP/PREF] Pedido #${orderId} | Total: ${totalAmount} | Fee (Marketplace Fee): ${marketplaceFeeAmount} | Vendedor: ${sellerId}`);
     
     const sellerClient = new MercadoPagoConfig({ accessToken: sellerToken });
     const preference = new Preference(sellerClient);
@@ -218,7 +218,7 @@ async function createMercadoPagoPreference(productId, payerEmail, totalAmount, o
           quantity: 1,
         }],
       payer: { email: payerEmail },
-      marketplace_fee: marketplaceFeeAmount, 
+      // marketplace_fee: marketplaceFeeAmount, // REMOVIDO: Nenhuma taxa será retida pelo MP para o marketplace, vai direto para o vendedor.
       external_reference: orderId.toString(), 
       payment_methods: { installments: 1 },
       back_urls: {
@@ -259,9 +259,9 @@ router.post('/orders', [protect, protectWithAddress], async (req, res) => {
     try {
         const { valorTotal, freteTotal, numeroDeLojas } = await calculateDynamicTotal(items, buyerCityId, buyerDistrictId); 
         
-        if (numeroDeLojas !== 1) {
-             return res.status(400).json({ success: false, message: 'Por favor, crie um pedido separado para cada loja.' });
-        }
+        // if (numeroDeLojas !== 1) { // <--- REMOVIDO: APLICAÇÃO MONO-LOJA
+        //      return res.status(400).json({ success: false, message: 'Por favor, crie um pedido separado para cada loja.' });
+        // }
         
         const productIds = items.map(item => parseInt(item.product_id, 10)).filter(id => !isNaN(id) && id > 0);
         const [products] = await pool.execute('SELECT s.id AS store_id, s.seller_id FROM products p JOIN stores s ON p.seller_id = s.seller_id WHERE p.id = ? LIMIT 1', [productIds[0]]);
@@ -346,7 +346,7 @@ router.post('/orders/simulate-purchase', [protect, protectWithAddress], async (r
     try {
         const { valorTotal, freteTotal, numeroDeLojas } = await calculateDynamicTotal(items, buyerCityId, buyerDistrictId);
 
-        if (numeroDeLojas !== 1) return res.status(400).json({ success: false, message: 'Apenas mono-loja.' });
+        // if (numeroDeLojas !== 1) return res.status(400).json({ success: false, message: 'Apenas mono-loja.' }); // <--- REMOVIDO: APLICAÇÃO MONO-LOJA
 
         const productIds = items.map(item => parseInt(item.product_id, 10));
         const [products] = await pool.execute('SELECT s.id AS store_id FROM products p JOIN stores s ON p.seller_id = s.seller_id WHERE p.id = ? LIMIT 1', [productIds[0]]);
