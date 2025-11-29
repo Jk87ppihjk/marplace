@@ -7,7 +7,7 @@ const { protectSeller } = require('./sellerAuthMiddleware');
 const { protect } = require('./authMiddleware'); 
 const { getBuyerTrackingMessage, getSellerMetrics } = require('./trackingService'); 
 
-const MARKETPLACE_FEE_RATE = 0.10;
+const MARKETPLACE_FEE_RATE = 0.00; // MODIFICADO PARA MONO-LOJA (SEM COMISSÃO)
 
 // ===================================================================
 // ROTAS DE LISTAGEM DE PEDIDOS
@@ -129,7 +129,8 @@ router.get('/users/seller/metrics', protectSeller, async (req, res) => {
         res.status(200).json({
             success: true,
             balance: { pending_balance: userRows[0].pending_balance || 0 },
-            financial_info: { marketplace_fee_rate: MARKETPLACE_FEE_RATE * 100, pricing_note: "Taxa 10% (Marketplace/MP)" },
+            // MUDANÇA CRÍTICA: Taxa agora é 0%
+            financial_info: { marketplace_fee_rate: MARKETPLACE_FEE_RATE * 100, pricing_note: "Taxa 0% (Split de Pagamento Desativado)" },
             metrics: metrics
         });
     } catch (error) {
